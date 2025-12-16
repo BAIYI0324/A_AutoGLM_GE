@@ -1,6 +1,15 @@
 # ✨ AutoGLM Android Assistant | Your Autonomous Phone Agent 🤖
 
-This is a **Standalone Android Version** of AutoGLM. No PC required, no ADB setup, no complex environment. Just install the APK and run! 🚀
+## Language
+- [中文 (Chinese)](README.md)
+- [English](README_EN.md)
+
+---
+
+This is a **Standalone Android Version** of AutoGLM! 🚀
+
+Based on the original AutoGLM, this project translates the core logic to native Android code. It replaces ADB commands with direct **Android Accessibility Service** calls. 
+**No PC required. No ADB setup. No Python scripts.** Just install and run!
 
 ---
 
@@ -18,12 +27,6 @@ This is a **Standalone Android Version** of AutoGLM. No PC required, no ADB setu
 *   🖐️ **Native Control**: Uses Android Accessibility Service for smooth clicks and swipes.
 *   🗣️ **Voice Interaction**: Built-in voice recognition. Just speak your commands! 🎙️
 *   👀 **Real-time Feedback**: **Floating Window** shows exactly what the AI is thinking and doing.
-
----
-
-## Language
-- [中文 (Chinese)](README.md)
-- [English](README_EN.md)
 
 ---
 
