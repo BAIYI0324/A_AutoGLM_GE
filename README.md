@@ -1,8 +1,8 @@
 # ✨ AutoGLM Android 助手 | 你的手机自动驾驶专家 🤖
 
-> 🚀 **加入微信交流群**：获取最新动态、反馈问题、交流玩法！
+> 🚀 **加入微信交流群**：获取最新动态、反馈问题、交流玩法！| **扫码下载 APP**：直接体验！
 > 
-> <img src="./contact_me_qr.png" width="200" alt="微信交流群二维码" />
+> <img src="./contact_me_qr.png" width="200" alt="微信交流群二维码" /> <img src="./androidautoglm.png" width="200" alt="扫码下载APK" />
 
 ## Language
 - [中文 (Chinese)](README.md)
@@ -12,7 +12,7 @@
 > ⚠️ **重要提示**：
 > **本项目需要 Android 11 (API 30) 或更高版本系统。**
 > 
-> 虽然 APP 最低可安装于 Android 8.0，但核心的**屏幕识别功能**依赖 Android 11 引入的原生无障碍截屏 API。
+> 核心的**屏幕识别功能**依赖 Android 11 引入的原生无障碍截屏 API。
 > 如果您的系统低于 Android 11，APP 将无法“看见”屏幕，导致 AI 无法工作。
 
 ---
