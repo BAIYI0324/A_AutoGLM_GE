@@ -125,18 +125,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun checkOverlayPermission(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!Settings.canDrawOverlays(context)) {
-                _uiState.value = _uiState.value.copy(missingOverlayPermission = true)
-            } else {
-                _uiState.value = _uiState.value.copy(missingOverlayPermission = false)
-                val currentError = _uiState.value.error
-                if (currentError != null && (currentError.contains("悬浮窗权限") || currentError.contains("Overlay Permission"))) {
-                    _uiState.value = _uiState.value.copy(error = null)
-                }
-            }
+        if (!Settings.canDrawOverlays(context)) {
+            _uiState.value = _uiState.value.copy(missingOverlayPermission = true)
         } else {
             _uiState.value = _uiState.value.copy(missingOverlayPermission = false)
+            val currentError = _uiState.value.error
+            if (currentError != null && (currentError.contains("悬浮窗权限") || currentError.contains("Overlay Permission"))) {
+                _uiState.value = _uiState.value.copy(error = null)
+            }
         }
     }
 

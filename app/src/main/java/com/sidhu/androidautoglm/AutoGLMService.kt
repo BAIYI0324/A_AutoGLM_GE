@@ -101,26 +101,12 @@ class AutoGLMService : AccessibilityService() {
     
     fun getScreenHeight(): Int {
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            return windowManager.currentWindowMetrics.bounds.height()
-        } else {
-            val display = windowManager.defaultDisplay
-            val metrics = DisplayMetrics()
-            display.getRealMetrics(metrics)
-            return metrics.heightPixels
-        }
+        return windowManager.currentWindowMetrics.bounds.height()
     }
     
     fun getScreenWidth(): Int {
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            return windowManager.currentWindowMetrics.bounds.width()
-        } else {
-            val display = windowManager.defaultDisplay
-            val metrics = DisplayMetrics()
-            display.getRealMetrics(metrics)
-            return metrics.widthPixels
-        }
+        return windowManager.currentWindowMetrics.bounds.width()
     }
 
     private fun showGestureAnimation(startX: Float, startY: Float, endX: Float? = null, endY: Float? = null, duration: Long = 1000) {
