@@ -12,6 +12,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.cancellation.CancellationException
 
 interface OpenAIApi {
     @POST("chat/completions")
@@ -148,6 +149,9 @@ class ModelClient(
                 }
                 return "Error: ${response.code()} $errorMessage"
             }
+        } catch (e: CancellationException) {
+            // Rethrow cancellation to let the ViewModel handle it properly
+            throw e
         } catch (e: Exception) {
             Log.e("AutoGLM_Debug", "Gemini API Exception", e)
             val errorMessage = when (e) {
@@ -210,6 +214,9 @@ class ModelClient(
                 }
                 return "Error: ${response.code()} $errorMessage"
             }
+        } catch (e: CancellationException) {
+            // Rethrow cancellation to let the ViewModel handle it properly
+            throw e
         } catch (e: Exception) {
             Log.e("ModelClient", "Exception", e)
             return "Error: ${e.message}"

@@ -20,8 +20,12 @@ import java.util.Date
 import android.os.Build
 import android.provider.Settings
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -100,9 +104,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     // Dynamic accessor for ActionExecutor
     private val actionExecutor: ActionExecutor?
         get() = AutoGLMService.getInstance()?.let { ActionExecutor(it) }
-    
+
     // Debug Mode Flag - set to true to bypass permission checks and service requirements
     private val DEBUG_MODE = false
+
+    // Job to manage the current task lifecycle - allows cancellation
+    private var currentTaskJob: kotlinx.coroutines.Job? = null
 
     // Conversation history for the API
     private val apiHistory = mutableListOf<Message>()
@@ -207,7 +214,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stopTask() {
-        _uiState.value = _uiState.value.copy(isRunning = false, isLoading = false)
+        // Cancel the current task job - this will propagate cancellation to all coroutines
+        currentTaskJob?.cancel()
+        currentTaskJob = null
+
+        // Update UI state - explicitly clear error to avoid showing cancellation as error
+        _uiState.value = _uiState.value.copy(isRunning = false, isLoading = false, error = null)
         val service = AutoGLMService.getInstance()
         service?.setTaskRunning(false)
         service?.updateFloatingStatus(getApplication<Application>().getString(R.string.status_stopped))
@@ -224,13 +236,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun sendMessage(text: String, isContinueCommand: Boolean = false) {
         Log.d("AutoGLM_Trace", "sendMessage called with text: $text, isContinueCommand: $isContinueCommand")
         if (text.isBlank()) return
-        
+
         if (modelClient == null) {
             Log.d("AutoGLM_Trace", "modelClient is null, initializing...")
             // Try to init with current state if not init
              modelClient = ModelClient(
-                 _uiState.value.baseUrl, 
-                 _uiState.value.apiKey, 
+                 _uiState.value.baseUrl,
+                 _uiState.value.apiKey,
                  _uiState.value.modelName,
                  _uiState.value.isGemini
              )
@@ -265,7 +277,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        // Create a new Job for this task - allows cancellation via stopTask()
+        currentTaskJob = kotlinx.coroutines.Job()
+
+        viewModelScope.launch(Dispatchers.IO + currentTaskJob!!) {
             Log.d("AutoGLM_Debug", "Coroutine started")
             _uiState.value = _uiState.value.copy(
                 messages = _uiState.value.messages + UiMessage("user", text),
@@ -333,14 +348,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             var isFinished = false
 
             try {
-                while (_uiState.value.isRunning && step < maxSteps) {
+                while (isActive && step < maxSteps) {
                     step++
                     Log.d("AutoGLM_Debug", "Step: $step")
-                    
+
                     if (!DEBUG_MODE && service != null) {
                         service.updateFloatingStatus(getApplication<Application>().getString(R.string.status_thinking))
                     }
-                    
+
                     // 1. Take Screenshot
                     Log.d("AutoGLM_Debug", "Taking screenshot...")
                     val screenshot = if (DEBUG_MODE) {
@@ -355,28 +370,28 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         break
                     }
                     Log.d("AutoGLM_Debug", "Screenshot taken: ${screenshot.width}x${screenshot.height}")
-                    
+
                     // Use service dimensions for consistency with coordinate system
                     val screenWidth = if (DEBUG_MODE) 1080 else service?.getScreenWidth() ?: 1080
                     val screenHeight = if (DEBUG_MODE) 2400 else service?.getScreenHeight() ?: 2400
-                    
+
                     Log.d("ChatViewModel", "Screenshot size: ${screenshot.width}x${screenshot.height}")
                     Log.d("ChatViewModel", "Service screen size: ${screenWidth}x${screenHeight}")
 
                     // 2. Build User Message
                     val currentApp = if (DEBUG_MODE) "DebugApp" else (service?.currentApp?.value ?: "Unknown")
                     val screenInfo = "{\"current_app\": \"$currentApp\"}"
-                    
+
                     val textPrompt = if (step == 1) {
                         "$currentPrompt\n\n$screenInfo"
                     } else {
                         "** Screen Info **\n\n$screenInfo"
                     }
-                    
+
                     val userContentItems = mutableListOf<ContentItem>()
                     userContentItems.add(ContentItem("text", text = textPrompt))
                     userContentItems.add(ContentItem("image_url", imageUrl = ImageUrl("data:image/png;base64,${ModelClient.bitmapToBase64(screenshot)}")))
-                    
+
                     val userMessage = Message("user", userContentItems)
                     apiHistory.add(userMessage)
 
@@ -384,16 +399,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     Log.d("AutoGLM_Debug", "Sending request to ModelClient...")
                     val responseText = modelClient?.sendRequest(apiHistory, screenshot) ?: "Error: Client null"
                     Log.d("AutoGLM_Debug", "Response received: ${responseText.take(100)}...")
-                    
+
                     if (responseText.startsWith("Error")) {
                         Log.e("AutoGLM_Debug", "API Error: $responseText")
                         postError(responseText)
                         break
                     }
-                    
+
                     // Parse response parts
                     val (thinking, actionStr) = ActionParser.parseResponseParts(responseText)
-                    
+
                     Log.i("AutoGLM_Log", "\n==================================================")
                     Log.i("AutoGLM_Log", "💭 思考过程:")
                     Log.i("AutoGLM_Log", thinking)
@@ -427,9 +442,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                          postError(getApplication<Application>().getString(R.string.error_executor_null))
                          break
                     }
-                    
+
+                    // ensureActive() will throw CancellationException if job was cancelled
+                    ensureActive()
+
                     val success = executor.execute(action)
-                    
+
                     if (action is Action.Finish) {
                         isFinished = true
                         _uiState.value = _uiState.value.copy(isRunning = false, isLoading = false)
@@ -437,22 +455,34 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         service?.updateFloatingStatus(getApplication<Application>().getString(R.string.action_finish))
                         break
                     }
-                    
+
                     if (!success) {
                         apiHistory.add(Message("user", getApplication<Application>().getString(R.string.error_last_action_failed)))
                     }
-                    
+
                     removeImagesFromHistory()
-                    
+
+                    // delay() is cancellable - will respond to job cancellation
                     delay(2000)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Task was cancelled by user - this is expected behavior
+                // DO NOT show as error - clear any error state
+                Log.d("ChatViewModel", "Task was cancelled by user")
+                _uiState.value = _uiState.value.copy(
+                    isRunning = false,
+                    isLoading = false,
+                    error = null  // Explicitly clear any error
+                )
+                service?.setTaskRunning(false)
+                service?.updateFloatingStatus(getApplication<Application>().getString(R.string.status_stopped))
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("AutoGLM_Debug", "Exception in sendMessage loop: ${e.message}", e)
                 postError(getApplication<Application>().getString(R.string.error_runtime_exception, e.message))
             }
-            
-            if (!isFinished && _uiState.value.isRunning) {
+
+            if (!isFinished && isActive) {
                 _uiState.value = _uiState.value.copy(isRunning = false, isLoading = false)
                 if (!DEBUG_MODE) {
                     service?.setTaskRunning(false)
