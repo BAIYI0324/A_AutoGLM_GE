@@ -19,3 +19,5 @@ app/build
 app/release/
 *.apk
 androidRelease
+# Ignore downloaded model file
+app/src/main/assets/sherpa-model/model.onnx

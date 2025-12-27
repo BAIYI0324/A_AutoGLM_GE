@@ -1,4 +1,6 @@
 import java.util.Properties
+import java.net.URL
+import java.io.FileOutputStream
 
 plugins {
     id("com.android.application")
@@ -12,6 +14,44 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val defaultApiKey = localProperties.getProperty("ZHIPU_API_KEY") ?: ""
+
+// Tasks
+tasks.register("downloadModel") {
+    val modelUrl = "https://github.com/sidhu-master/AndroidAutoGLM/releases/download/SherpaModel/model_backup.onnx"
+    val outputDir = project.file("src/main/assets/sherpa-model")
+    val outputFile = File(outputDir, "model.onnx")
+
+    doLast {
+        if (!outputDir.exists()) {
+            outputDir.mkdirs()
+        }
+
+        if (!outputFile.exists()) {
+            println("Downloading model.onnx from $modelUrl...")
+            try {
+                val url = URL(modelUrl)
+                val connection = url.openConnection()
+                connection.connect()
+                connection.getInputStream().use { inputStream ->
+                    FileOutputStream(outputFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                println("Download complete: ${outputFile.absolutePath}")
+            } catch (e: Exception) {
+                println("Error downloading model: ${e.message}")
+                throw e
+            }
+        } else {
+            println("Model file already exists. Skipping download.")
+        }
+    }
+}
+
+// Hook into preBuild
+tasks.named("preBuild") {
+    dependsOn("downloadModel")
+}
 
 android {
     namespace = "com.sidhu.androidautoglm"
