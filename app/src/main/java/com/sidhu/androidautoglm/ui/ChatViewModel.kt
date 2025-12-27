@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.sidhu.androidautoglm.action.Action
 import com.sidhu.androidautoglm.action.ActionExecutor
 import com.sidhu.androidautoglm.action.ActionParser
+import com.sidhu.androidautoglm.action.AppMapper
 import com.sidhu.androidautoglm.network.ContentItem
 import com.sidhu.androidautoglm.network.ImageUrl
 import com.sidhu.androidautoglm.network.Message
@@ -282,13 +283,17 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch(Dispatchers.IO + currentTaskJob!!) {
             Log.d("AutoGLM_Debug", "Coroutine started")
+
+            // Refresh app mapping before each request
+            AppMapper.refreshInstalledApps()
+
             _uiState.value = _uiState.value.copy(
                 messages = _uiState.value.messages + UiMessage("user", text),
                 isLoading = true,
                 isRunning = true,
                 error = null
             )
-            
+
             // Check for continuation
             val isContinuation = isContinueCommand && apiHistory.isNotEmpty()
             
