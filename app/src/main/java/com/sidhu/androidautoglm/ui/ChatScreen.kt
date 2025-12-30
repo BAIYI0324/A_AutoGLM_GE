@@ -6,6 +6,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -18,6 +28,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -60,6 +71,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import com.sidhu.androidautoglm.ui.util.displayText
 import com.sidhu.androidautoglm.ui.util.displayColor
+import com.sidhu.androidautoglm.ui.model.FormattedContent
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.foundation.Image
@@ -779,11 +791,17 @@ fun MessageItem(
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit
                     )
                 }
-                Text(
-                    text = message.content,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = contentColor
-                )
+
+                // Display formatted content for assistant messages, or raw content for others
+                if (isAssistant && message.formattedContent != null) {
+                    DisplayFormattedContent(message.formattedContent, contentColor)
+                } else {
+                    Text(
+                        text = message.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = contentColor
+                    )
+                }
             }
         }
 
@@ -810,6 +828,94 @@ fun MessageItem(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+        }
+    }
+}
+
+/**
+ * Displays formatted content for assistant messages.
+ * Handles TextContent, ActionContent, and MixedContent types.
+ */
+@Composable
+private fun DisplayFormattedContent(
+    formattedContent: FormattedContent,
+    contentColor: Color
+) {
+    when (formattedContent) {
+        is FormattedContent.TextContent -> {
+            Text(
+                text = formattedContent.text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = contentColor
+            )
+        }
+        is FormattedContent.MixedContent -> {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Display thinking text
+                if (formattedContent.text.isNotBlank()) {
+                    Text(
+                        text = formattedContent.text,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = contentColor
+                    )
+                }
+
+                // Display action content if present
+                if (formattedContent.action != null) {
+                    DisplayActionCard(formattedContent.action)
+                }
+            }
+        }
+        is FormattedContent.ActionContent -> {
+            DisplayActionCard(formattedContent)
+        }
+    }
+}
+
+/**
+ * Displays an action in a styled card.
+ * Uses the icon from ActionType enum if available.
+ */
+@Composable
+private fun DisplayActionCard(action: FormattedContent.ActionContent) {
+    val backgroundColor = when (action.actionType) {
+        com.sidhu.androidautoglm.action.ActionType.FINISH -> Color(0xFF4CAF50) // Green for completion
+        com.sidhu.androidautoglm.action.ActionType.UNKNOWN -> Color(0xFFFFCDD2) // Light red for unknown
+        else -> Color(0xFFE3F2FD) // Light blue for normal actions
+    }
+
+    val textColor = when (action.actionType) {
+        com.sidhu.androidautoglm.action.ActionType.FINISH -> Color.White
+        com.sidhu.androidautoglm.action.ActionType.UNKNOWN -> Color(0xFFD32F2F)
+        else -> Color(0xFF1976D2)
+    }
+
+    // Use icon from FormattedContent.ActionContent (comes from ActionType enum)
+    val icon = action.icon
+
+    Surface(
+        color = backgroundColor,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = textColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            Text(
+                text = action.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = textColor
+            )
         }
     }
 }
