@@ -47,6 +47,7 @@ import com.sidhu.androidautoglm.data.AppDatabase
 import com.sidhu.androidautoglm.data.ImageStorage
 import com.sidhu.androidautoglm.data.repository.ConversationRepository
 import com.sidhu.androidautoglm.ui.model.toUiMessages
+import com.sidhu.androidautoglm.ui.model.FormattedContent
 import com.sidhu.androidautoglm.usecase.ConversationUseCase
 
 /**
@@ -146,7 +147,8 @@ data class SettingsState(
 data class UiMessage(
     val role: String,
     val content: String,
-    val image: Bitmap? = null
+    val image: Bitmap? = null,
+    val formattedContent: FormattedContent? = null
 )
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
@@ -220,7 +222,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 .flatMapLatest { conversationId ->
                     if (conversationId != null) {
                         repository.getMessagesWithImagesFlow(conversationId)
-                            .map { messagesWithImages -> messagesWithImages.toUiMessages() }
+                            .map { messagesWithImages -> messagesWithImages.toUiMessages(getApplication()) }
                     } else {
                         flowOf(emptyList())
                     }
@@ -587,7 +589,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     // 3. Call API
                     Log.d("AutoGLM_Debug", "Sending request to ModelClient...")
                     val responseText = modelClient?.sendRequest(apiHistory, screenshot) ?: "Error: Client null"
-                    Log.d("AutoGLM_Debug", "Response received: ${responseText.take(100)}...")
+                    Log.d("AutoGLM_Debug", "Response received: $responseText")
 
                     if (responseText.startsWith("Error")) {
                         Log.e("AutoGLM_Debug", "API Error: $responseText")
@@ -595,8 +597,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         break
                     }
 
-                    // Parse response parts
-                    val (thinking, actionStr) = ActionParser.parseResponseParts(responseText)
+                    // Parse response parts for display
+                    val (thinking, _) = ActionParser.parseResponsePartsToParsedAction(responseText)
+
+                    // Extract raw action string for logging and storage
+                    val actionStr = ActionParser.extractActionString(responseText)
 
                     Log.i("AutoGLM_Log", "\n==================================================")
                     Log.i("AutoGLM_Log", "💭 思考过程:")
@@ -606,13 +611,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     Log.i("AutoGLM_Log", "==================================================")
 
                     // Add Assistant response to history
-                    apiHistory.add(Message("assistant", "<think>$thinking</think><answer>$actionStr</answer>"))
+                    apiHistory.add(Message("assistant", buildAssistantContent(thinking, actionStr)))
                     
                     // Save assistant message to database with screenshot
                     if (conversationId != null) {
                         try {
-                            val assistantContent = """$thinking
-<answer>$actionStr</answer>"""
+                            val assistantContent = buildAssistantContent(thinking, actionStr)
                             repository.saveAssistantMessage(conversationId, assistantContent, screenshot)
                         } catch (e: Exception) {
                             Log.e("ChatViewModel", "Failed to save assistant message", e)
@@ -630,8 +634,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         break
                     }
 
-                    // 4. Parse Action
-                    val action = ActionParser.parse(responseText, screenWidth, screenHeight)
+                    // 4. Parse Action from the extracted action string (not the full response)
+                    val action = ActionParser.parseAction(actionStr, screenWidth, screenHeight)
                     
                     // Update Floating Window Status with friendly description
                     service?.updateFloatingStatus(getActionDescription(action))
@@ -703,22 +707,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Generates a description for an action using ActionDescriber.
+     * This replaces the old getActionDescription() method.
+     */
     private fun getActionDescription(action: Action): String {
         val context = getApplication<Application>()
-        return when (action) {
-            is Action.Tap -> context.getString(R.string.action_tap)
-            is Action.DoubleTap -> context.getString(R.string.action_double_tap)
-            is Action.LongPress -> context.getString(R.string.action_long_press)
-            is Action.Swipe -> context.getString(R.string.action_swipe)
-            is Action.Type -> context.getString(R.string.action_type, action.text)
-            is Action.Launch -> context.getString(R.string.action_launch, action.appName)
-            is Action.Back -> context.getString(R.string.action_back)
-            is Action.Home -> context.getString(R.string.action_home)
-            is Action.Wait -> context.getString(R.string.action_wait)
-            is Action.Finish -> context.getString(R.string.action_finish)
-            is Action.Error -> context.getString(R.string.action_error, action.reason)
-            else -> context.getString(R.string.action_unknown)
-        }
+        return com.sidhu.androidautoglm.action.ActionDescriber.describe(action, context)
     }
     
     private fun postError(msg: String) {
@@ -761,6 +756,19 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to remove image from history", e)
             }
+        }
+    }
+
+    /**
+     * Builds assistant content for API history and database storage.
+     * Format: {thinking}{action}
+     * Example: "I need to launch the app.do(action=\"Launch\", app=\"美团\")"
+     */
+    private fun buildAssistantContent(thinking: String, action: String): String {
+        return if (action.isNotEmpty()) {
+            "$thinking$action"
+        } else {
+            thinking
         }
     }
 
@@ -885,7 +893,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 // Update UI messages first to ensure consistency
-                _uiState.value = _uiState.value.copy(messages = messagesWithImages.toUiMessages())
+                _uiState.value = _uiState.value.copy(messages = messagesWithImages.toUiMessages(getApplication()))
 
                 // Rebuild apiHistory from database messages using UseCase
                 apiHistory.clear()

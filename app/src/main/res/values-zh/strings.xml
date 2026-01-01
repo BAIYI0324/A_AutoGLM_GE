@@ -68,19 +68,38 @@
     <string name="error_task_terminated_max_steps">任务终止：达到最大步数</string>
     <string name="error_executor_null">执行器为空 (服务可能已停止)</string>
 
-    <!-- Actions -->
-    <string name="action_tap">点击屏幕</string>
-    <string name="action_double_tap">双击屏幕</string>
-    <string name="action_long_press">长按屏幕</string>
-    <string name="action_swipe">滑动屏幕</string>
-    <string name="action_type">输入文本: %1$s</string>
-    <string name="action_launch">打开 %1$s</string>
+    <!-- Actions (Consolidated for both floating window and chat) -->
+    <!-- Action type defaults (used when no parameters provided) -->
+    <string name="action_type_type">输入</string>
+    <string name="action_type_type_name">输入姓名</string>
+    <string name="action_type_take_over">用户协助</string>
+    <string name="action_type_call_api">API调用</string>
+
+    <!-- Action descriptions -->
+    <string name="action_tap">点击</string>
+    <string name="action_tap_with_element">点击：%1$s</string>
+    <string name="action_double_tap">双击</string>
+    <string name="action_double_tap_with_element">双击：%1$s</string>
+    <string name="action_long_press">长按</string>
+    <string name="action_long_press_with_element">长按：%1$s</string>
+    <string name="action_swipe">滑动</string>
+    <string name="action_swipe_with_coordinates">滑动：从 %1$s 到 %2$s</string>
+    <string name="action_type_with_text">输入：%1$s</string>
+    <string name="action_type_name_with_text">输入姓名：%1$s</string>
+    <string name="action_launch">启动</string>
+    <string name="action_launch_with_app">启动：%1$s</string>
     <string name="action_back">返回</string>
     <string name="action_home">回到桌面</string>
     <string name="action_wait">等待中</string>
-    <string name="action_finish">任务完成</string>
-    <string name="action_error">出错: %1$s</string>
-    <string name="action_unknown">未知动作</string>
+    <string name="action_wait_with_duration">等待：%1$s</string>
+    <string name="action_finish">完成</string>
+    <string name="action_finish_with_message">任务完成：%1$s</string>
+    <string name="action_take_over_with_message">需要用户协助：%1$s</string>
+    <string name="action_interact">需要用户选择</string>
+    <string name="action_note">记录页面内容</string>
+    <string name="action_call_api_with_instruction">API调用：%1$s</string>
+    <string name="action_unknown">操作：%1$s</string>
+    <string name="action_error">出错：%1$s</string>
 
     <string name="prompt_date_prefix">今天的日期是: </string>
     <string name="switch_language">Switch to English</string>

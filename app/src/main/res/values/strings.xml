@@ -68,19 +68,38 @@
     <string name="error_task_terminated_max_steps">Task terminated: max steps reached</string>
     <string name="error_executor_null">Executor is null (service may have stopped)</string>
 
-    <!-- Actions -->
-    <string name="action_tap">Tap screen</string>
-    <string name="action_double_tap">Double tap screen</string>
-    <string name="action_long_press">Long press screen</string>
-    <string name="action_swipe">Swipe screen</string>
-    <string name="action_type">Input text: %1$s</string>
-    <string name="action_launch">Open %1$s</string>
+    <!-- Actions (Consolidated for both floating window and chat) -->
+    <!-- Action type defaults (used when no parameters provided) -->
+    <string name="action_type_type">Type</string>
+    <string name="action_type_type_name">Enter Name</string>
+    <string name="action_type_take_over">User Assistance</string>
+    <string name="action_type_call_api">API Call</string>
+
+    <!-- Action descriptions -->
+    <string name="action_tap">Tap</string>
+    <string name="action_tap_with_element">Tap: %1$s</string>
+    <string name="action_double_tap">Double Tap</string>
+    <string name="action_double_tap_with_element">Double Tap: %1$s</string>
+    <string name="action_long_press">Long Press</string>
+    <string name="action_long_press_with_element">Long Press: %1$s</string>
+    <string name="action_swipe">Swipe</string>
+    <string name="action_swipe_with_coordinates">Swipe: from %1$s to %2$s</string>
+    <string name="action_type_with_text">Type: %1$s</string>
+    <string name="action_type_name_with_text">Enter Name: %1$s</string>
+    <string name="action_launch">Launch</string>
+    <string name="action_launch_with_app">Launch: %1$s</string>
     <string name="action_back">Back</string>
-    <string name="action_home">Go Home</string>
+    <string name="action_home">Home</string>
     <string name="action_wait">Waiting</string>
-    <string name="action_finish">Task finished</string>
+    <string name="action_wait_with_duration">Wait: %1$s</string>
+    <string name="action_finish">Finished</string>
+    <string name="action_finish_with_message">Finished: %1$s</string>
+    <string name="action_take_over_with_message">User assistance needed: %1$s</string>
+    <string name="action_interact">Requires user selection</string>
+    <string name="action_note">Record page content</string>
+    <string name="action_call_api_with_instruction">API Call: %1$s</string>
+    <string name="action_unknown">Action: %1$s</string>
     <string name="action_error">Error: %1$s</string>
-    <string name="action_unknown">Unknown action</string>
 
     <string name="prompt_date_prefix">Today\'s date is: </string>
     <string name="switch_language">切换到中文</string>
