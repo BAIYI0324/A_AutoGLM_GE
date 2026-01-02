@@ -135,6 +135,7 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
 
     // State machine for floating window visibility and interaction
     private val _stateFlow = MutableStateFlow<FloatingWindowState>(FloatingWindowState.Hidden)
+    private val stateMutex = Mutex()
     /** Public read-only state flow for observing floating window state changes */
     val stateFlow: StateFlow<FloatingWindowState> = _stateFlow.asStateFlow()
 
